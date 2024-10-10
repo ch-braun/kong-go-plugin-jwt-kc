@@ -1,0 +1,86 @@
+services:
+  kc-db:
+    image: postgres:15
+    restart: always
+    shm_size: 256mb
+    environment:
+      POSTGRES_USER: kc
+      POSTGRES_DB: kc
+      POSTGRES_PASSWORD: kcpass
+    volumes:
+      - kc_pg_data:/var/lib/postgresql/data
+    networks:
+      - kc
+  kong-db:
+    image: postgres:15
+    restart: always
+    shm_size: 256mb
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_DB: kong
+      POSTGRES_PASSWORD: kongpass
+    volumes:
+      - kong_pg_data:/var/lib/postgresql/data
+    networks:
+      - kong
+  kc:
+    image: quay.io/keycloak/keycloak:23.0
+    command: start
+    environment:
+      KC_HOSTNAME: kc
+      KC_HOSTNAME_PORT: 8080
+      KC_HTTP_ENABLED: true
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ineedcoffee
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://kc-db/kc
+      KC_DB_USERNAME: kc
+      KC_DB_PASSWORD: kcpass
+    ports:
+      - "8080:8080"
+    restart: always
+    depends_on:
+      - kc-db
+    networks:
+      - kc
+      - default
+  kong-init:
+    depends_on:
+      kong-db:
+        condition: service_started
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: kong migrations bootstrap
+    env_file: kong.env
+    networks:
+      - kong
+  kong:
+    depends_on:
+      kong-init:
+        condition: service_completed_successfully
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+      - "8001:8001"
+      - "8444:8444"
+      - "8002:8002"
+      - "8445:8445"
+      - "8003:8003"
+      - "8004:8004"
+    env_file: kong.env
+    networks:
+      - kong
+      - default
+
+volumes:
+  kc_pg_data:
+  kong_pg_data:
+
+networks:
+  kc:
+  kong:
