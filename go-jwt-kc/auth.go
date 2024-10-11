@@ -75,7 +75,7 @@ func doAuthentication(conf *Config, kong *pdk.PDK) (bool, *authError) {
 	// Verify that the algorithm is allowed
 	configuredAlgorithms := strings.Split(strings.ToUpper(conf.Algorithms), ",")
 	if len(configuredAlgorithms) == 0 || configuredAlgorithms[0] == "" {
-		configuredAlgorithms = []string{"HS256"}
+		configuredAlgorithms = []string{"RS256", "ES256"}
 	}
 
 	headerAlgorithm := strings.ToUpper(header["alg"].(string))
@@ -100,7 +100,11 @@ func doAuthentication(conf *Config, kong *pdk.PDK) (bool, *authError) {
 	}
 
 	// Retrieve the JWKS
-	jwks, err := retrieveJWKS(fmt.Sprintf(conf.WellKnownTemplate, claims["iss"]), kong)
+	wellKnownTemplate := conf.WellKnownTemplate
+	if wellKnownTemplate == "" {
+		wellKnownTemplate = "%s/.well-known/openid-configuration"
+	}
+	jwks, err := retrieveJWKS(fmt.Sprintf(wellKnownTemplate, claims["iss"]), kong)
 	if err != nil {
 		return false, &authError{"Error getting JWKS", http.StatusInternalServerError, err}
 	}
@@ -121,7 +125,11 @@ func doAuthentication(conf *Config, kong *pdk.PDK) (bool, *authError) {
 	}
 
 	//Verify the JWT registered claims
-	for _, claim := range strings.Split(strings.ToLower(conf.ClaimsToVerify), ",") {
+	claimsToVerify := strings.Split(strings.ToLower(conf.ClaimsToVerify), ",")
+	if len(claimsToVerify) == 0 || claimsToVerify[0] == "" {
+		claimsToVerify = []string{"exp"}
+	}
+	for _, claim := range claimsToVerify {
 		if claims[claim] == nil {
 			return false, &authError{"Missing claim " + claim, http.StatusUnauthorized, nil}
 		}
@@ -145,7 +153,7 @@ func doAuthentication(conf *Config, kong *pdk.PDK) (bool, *authError) {
 
 	// Verify roles or scopes
 	// Validate scopes
-	ok, err = validateScope(strings.Split(conf.Scope, ","), &claims)
+	ok, err = validateScope(strings.Split(conf.Scopes, ","), &claims)
 
 	// Validate realm roles
 	if ok {
@@ -217,7 +225,11 @@ func retrieveTokens(conf *Config, kong *pdk.PDK) ([]string, error) {
 		_ = kong.Log.Err("Error while fetching JWT from request headers: " + err.Error())
 		return nil, err
 	}
-	for _, headerName := range strings.Split(strings.ToLower(conf.HeaderNames), ",") {
+	headerNames := strings.Split(conf.HeaderNames, ",")
+	if len(headerNames) == 0 || headerNames[0] == "" {
+		headerNames = []string{"authorization"}
+	}
+	for _, headerName := range headerNames {
 		if tokens, found := requestHeaders[headerName]; found && tokens != nil {
 			for _, t := range tokens {
 				if t != "" {
@@ -240,7 +252,11 @@ func matchConsumer(conf *Config, kong *pdk.PDK, claims jwt.MapClaims) (bool, err
 		return true, nil
 	}
 	_ = kong.Log.Debug("Matching consumer")
-	consumerId := claims[strings.ToLower(conf.ConsumerMatchClaim)].(string)
+	consumerMatchClaim := strings.ToLower(conf.ConsumerMatchClaim)
+	if consumerMatchClaim == "" {
+		consumerMatchClaim = "azp"
+	}
+	consumerId := claims[consumerMatchClaim].(string)
 	consumer, err := fetchConsumer(consumerId, kong)
 	if err != nil {
 		_ = kong.Log.Err("Error while fetching consumer: " + err.Error())
