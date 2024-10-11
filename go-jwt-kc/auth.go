@@ -11,6 +11,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"maps"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 )
@@ -72,16 +73,18 @@ func doAuthentication(conf *Config, kong *pdk.PDK) (bool, *authError) {
 	}
 
 	// Verify that the algorithm is allowed
-	configuredAlgorithm := strings.ToUpper(conf.Algorithm)
-	if configuredAlgorithm == "" {
-		configuredAlgorithm = "HS256"
+	configuredAlgorithms := strings.Split(strings.ToUpper(conf.Algorithms), ",")
+	if len(configuredAlgorithms) == 0 || configuredAlgorithms[0] == "" {
+		configuredAlgorithms = []string{"HS256"}
 	}
-	if header["alg"] != configuredAlgorithm {
+
+	headerAlgorithm := strings.ToUpper(header["alg"].(string))
+	if !slices.Contains(configuredAlgorithms, headerAlgorithm) {
 		return false, &authError{"Invalid algorithm", http.StatusForbidden, nil}
 	}
 
 	// Now verify the JWT signature
-	method := jwt.GetSigningMethod(configuredAlgorithm)
+	method := jwt.GetSigningMethod(headerAlgorithm)
 	if method == nil {
 		return false, &authError{"Invalid algorithm", http.StatusForbidden, nil}
 	}
@@ -101,22 +104,20 @@ func doAuthentication(conf *Config, kong *pdk.PDK) (bool, *authError) {
 	if err != nil {
 		return false, &authError{"Error getting JWKS", http.StatusInternalServerError, err}
 	}
-	valid := false
-	for _, key := range jwks.Keys {
-		if key.Kid == header["kid"] {
-			_ = kong.Log.Debug("Verifying signature with key " + key.Kid)
-			if err = method.Verify(parts[0]+"."+parts[1], parts[2], key.PublicKey); err == nil {
-				_ = kong.Log.Debug("Signature successfully verified with key " + key.Kid)
-				valid = true
-				break
-			} else {
-				_ = kong.Log.Debug("Error verifying signature with key " + key.Kid + ": " + err.Error())
-			}
-		}
+	key, found := jwks.Keys[header["kid"].(string)]
+	if !found {
+		return false, &authError{"Invalid signature", http.StatusUnauthorized, nil}
+	}
+	if key.RSAPublicKey != nil {
+		err = method.Verify(parts[0]+"."+parts[1], parts[2], key.RSAPublicKey)
+	} else if key.ECPublicKey != nil {
+		err = method.Verify(parts[0]+"."+parts[1], parts[2], key.ECPublicKey)
+	} else {
+		return false, &authError{"Unsupported algorithm", http.StatusForbidden, nil}
 	}
 
-	if !valid {
-		return false, &authError{"Invalid signature", http.StatusUnauthorized, nil}
+	if err != nil {
+		return false, &authError{"Invalid signature", http.StatusUnauthorized, err}
 	}
 
 	//Verify the JWT registered claims
@@ -239,15 +240,15 @@ func matchConsumer(conf *Config, kong *pdk.PDK, claims jwt.MapClaims) (bool, err
 		return true, nil
 	}
 	_ = kong.Log.Debug("Matching consumer")
-	consumerId := claims[strings.ToLower(conf.ConsumerMatchClaim)]
-	consumer, err := fetchConsumer(consumerId.(string), kong)
+	consumerId := claims[strings.ToLower(conf.ConsumerMatchClaim)].(string)
+	consumer, err := fetchConsumer(consumerId, kong)
 	if err != nil {
 		_ = kong.Log.Err("Error while fetching consumer: " + err.Error())
 		return false, err
 	}
 
 	if consumer.Id == "" && !conf.ConsumerMatchIgnoreNotFound {
-		_ = kong.Log.Debug("Unable to find consumer " + consumerId.(string) + " for token")
+		_ = kong.Log.Debug("Unable to find consumer " + consumerId + " for token")
 		return false, nil
 	}
 

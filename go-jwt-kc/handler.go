@@ -29,7 +29,7 @@ func (conf Config) Access(kong *pdk.PDK) {
 		return
 	}
 
-	if !conf.RunOnPreflight && strings.ToUpper(requestMethod) == http.MethodOptions {
+	if !conf.RunOnPreflight && strings.EqualFold(requestMethod, http.MethodOptions) {
 		return
 	}
 

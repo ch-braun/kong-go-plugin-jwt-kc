@@ -8,7 +8,7 @@ type Config struct {
 	RunOnPreflight              bool   `json:"run_on_preflight"`
 	HeaderNames                 string `json:"header_names"`
 	MaximumExpiration           int64  `json:"maximum_expiration"`
-	Algorithm                   string `json:"algorithm"`
+	Algorithms                  string `json:"algorithms"`
 	AllowedIss                  string `json:"allowed_iss"`
 	WellKnownTemplate           string `json:"well_known_template"`
 	Scope                       string `json:"scope"`
