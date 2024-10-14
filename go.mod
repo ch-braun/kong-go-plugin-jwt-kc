@@ -10,5 +10,6 @@ require (
 
 require (
 	github.com/ugorji/go/codec v1.2.12 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 )

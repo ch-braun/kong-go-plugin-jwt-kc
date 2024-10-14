@@ -336,11 +336,13 @@ func validateScope(allowedScopes []string, claims *jwt.MapClaims) (bool, error) 
 
 	scopes, ok := (*claims)["scope"]
 	if !ok {
-		return false, errors.New("missing scope claim")
+		return false, errors.New("missing required scope claim")
 	}
 
+	separatedScopes := strings.Split(scopes.(string), " ")
+
 	for _, scope := range allowedScopes {
-		if strings.Contains(scopes.(string), scope) {
+		if slices.Contains(separatedScopes, scope) {
 			return true, nil
 		}
 	}
@@ -358,11 +360,12 @@ func validateRealmRoles(allowedRealmRoles []string, claims *jwt.MapClaims) (bool
 		return false, errors.New("missing required realm_access claim")
 	}
 
-	if _, ok := claimAccess["roles"]; !ok {
+	claimAccessRoles, ok := claimAccess["roles"]
+	if !ok {
 		return false, errors.New("missing required realm_access.roles claim")
 	}
 
-	for _, claimRole := range claimAccess["roles"] {
+	for _, claimRole := range claimAccessRoles {
 		for _, allowedRole := range allowedRealmRoles {
 			if claimRole == allowedRole {
 				return true, nil
@@ -380,16 +383,12 @@ func validateRoles(allowedRoles []string, claims *jwt.MapClaims) (bool, error) {
 
 	azp, ok := (*claims)["azp"].(string)
 	if !ok {
-		return false, errors.New("missing azp claim")
-	}
-
-	claimRoles, ok := (*claims)["realm_access"].(map[string][]string)
-	if !ok {
-		return false, errors.New("missing required realm_access claim")
+		return false, errors.New("missing required azp claim")
 	}
 
 	tmpAllowedRoles := make([]string, len(allowedRoles))
-	for i, role := range claimRoles["roles"] {
+
+	for i, role := range allowedRoles {
 		tmpAllowedRoles[i] = azp + ":" + role
 	}
 
