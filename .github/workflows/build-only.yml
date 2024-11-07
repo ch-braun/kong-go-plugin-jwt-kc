@@ -1,7 +1,0 @@
-name: Build Only
-
-on: [push]
-
-jobs:
-  call-build:
-    uses: ./.github/workflows/build.yml
