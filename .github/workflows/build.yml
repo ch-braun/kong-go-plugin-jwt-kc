@@ -3,9 +3,7 @@ name: Build
 on:
   push:
     branches:
-      - '*'
-    tags:
-      - '*'
+      - '*' # Trigger on all branches
 
 jobs:
   build:
