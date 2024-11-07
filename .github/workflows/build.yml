@@ -40,21 +40,23 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
 
-    steps:
-      - name: Download artifact (AMD64)
-        uses: actions/download-artifact@v4
-        with:
-          name: go-jwt-kc-linux-amd64
-          path: dist/
+    permissions:
+      contents: write
 
-      - name: Download artifact (ARM64)
+    strategy:
+      matrix:
+        goos: [ linux ]
+        goarch: [ amd64, arm64 ]
+
+    steps:
+      - name: Download artifact ${{ matrix.goos }}-${{ matrix.goarch }}
         uses: actions/download-artifact@v4
         with:
-          name: go-jwt-kc-linux-arm64
+          name: go-jwt-kc-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/
 
       - name: Upload binaries
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/go-jwt-kc-linux-amd64
-            dist/go-jwt-kc-linux-arm64
+            dist/go-jwt-kc-${{ matrix.goos }}-${{ matrix.goarch }}
