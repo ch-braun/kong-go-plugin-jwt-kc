@@ -40,13 +40,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
 
-    permissions:
-      contents: write
-
     strategy:
       matrix:
         goos: [ linux ]
         goarch: [ amd64, arm64 ]
+
+    permissions:
+      contents: write
 
     steps:
       - name: Download artifact ${{ matrix.goos }}-${{ matrix.goarch }}
