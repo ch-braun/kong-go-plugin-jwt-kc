@@ -1,8 +1,10 @@
-name: Build-and-Release
+name: Build
 
 on: [ push ]
 
 jobs:
+  run-test:
+    include: .github/workflows/_test.yml
   build:
     runs-on: ubuntu-latest
 
