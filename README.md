@@ -1,6 +1,6 @@
 # kong-go-plugin-jwt-kc
 
-A Kong Go plugin to validate access tokens issued by Keycloak. This plugins is inspired by the
+A Kong Go plugin to validate access tokens issued by Keycloak. This plugin is inspired by the
 Lua-based [kong-plugin-jwt-keycloak](https://github.com/telekom-digioss/kong-plugin-jwt-keycloak). There are, however,
 some differences.
 
@@ -42,7 +42,7 @@ A plugin instance can be configured using the following properties:
 | anonymous                       | If a kong consumer uuid is set, the plugin will use this consumer for requests without a valid token | `""`                                    |
 | run_on_preflight                | If the plugin should run on preflight requests                                                       | `false`                                 |
 | maximum_expiration              | The maximum remaining expiration time of the token in seconds                                        | `0`                                     |
-| algorithms                      | The supported signing algorithms                                                                     | `"HS256,ES256"`                         |
+| algorithms                      | The supported signing algorithms                                                                     | `"RS256,ES256"`                         |
 | allowed_iss                     | The allowed issuers                                                                                  | `""`                                    |
 | well_known_template             | The template for the well-known endpoint                                                             | `"%s/.well-known/openid-configuration"` |
 | scopes                          | The required scopes                                                                                  | `""`                                    |
