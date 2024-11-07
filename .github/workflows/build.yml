@@ -1,9 +1,7 @@
 name: Build
 
 on:
-  push:
-    branches:
-      - '*' # Trigger on all branches
+  workflow_call:
 
 jobs:
   build:
