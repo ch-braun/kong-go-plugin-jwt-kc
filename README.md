@@ -31,7 +31,7 @@ The plugin's global behavior can be configured using the following properties:
 
 ### Instance-specific plugin configuration
 
-A plugin instance can be configured using the following properties:
+A plugin instance can be configured using the following properties. Please note that multiple values / lists are comma-separated:
 
 | Property                        | Description                                                                                          | Default                                 |
 |---------------------------------|------------------------------------------------------------------------------------------------------|-----------------------------------------|
