@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-const PluginVersion = "0.0.1"
+const PluginVersion = "1.0.0"
 
 var PluginPriority = 1005
 
