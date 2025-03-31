@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/Kong/go-pdk v0.11.0
-	github.com/golang-jwt/jwt/v4 v4.5.1
+	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 )
 
